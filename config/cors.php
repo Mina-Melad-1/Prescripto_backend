@@ -1,23 +1,30 @@
 <?php
 
 return [
-    'paths' => ['api/*', 'sanctum/csrf-cookie'],
-    'allowed_methods' => ['*'],
-    'allowed_origins' => [
 
+    'paths' => ['api/*', 'sanctum/csrf-cookie'],
+
+    'allowed_methods' => ['*'],
+
+    'allowed_origins' => [
+        // Local development
         'http://localhost:5173',
-        'http://localhost:3000',
-        'http://localhost:5174',
-        'http://localhost:5173',
-        'http://localhost:5176',
-        'https://netflix-clone-lemon-nu-42.vercel.app',
-        'https://spontaneous-dragon-0b35f1.netlify.app/',
-        'https://*.netlify.app/',
-        'https://*.vercel.app/',
+
+        // Your frontend (Vercel)
+        'https://prescripto-frontend-gamma.vercel.app',
+
+        // Your backend (Railway)
+        'https://prescriptocopy-production.up.railway.app',
     ],
+
     'allowed_origins_patterns' => [],
+
     'allowed_headers' => ['*'],
+
     'exposed_headers' => [],
+
     'max_age' => 0,
-    'supports_credentials' => true,
+
+    // IMPORTANT: token-based auth
+    'supports_credentials' => false,
 ];
