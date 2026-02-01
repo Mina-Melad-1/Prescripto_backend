@@ -13,6 +13,7 @@ Route::get('/user', function (Request $request) {
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
+Route::get('/profile', [AuthController::class, 'profile'])->middleware('auth:sanctum');
 Route::post('/editProfile', [AuthController::class, 'editProfile'])->middleware('auth:sanctum');
 
 Route::post('/admin/login', [AdminController::class, 'login']);
