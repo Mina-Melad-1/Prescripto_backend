@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Laravel\Sanctum\HasApiTokens;
 
-class Doctor extends Model
+class Doctor extends Authenticatable
 {
-protected $fillable = [
+    use HasApiTokens;
+
+    protected $fillable = [
         'name',
         'email',
         'profile_image',

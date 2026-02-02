@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\DoctorController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/user', function (Request $request) {
@@ -24,4 +25,5 @@ Route::post('/admin/edit-doctor/{doctorId}', [AdminController::class, 'edit_doct
 Route::get('/admin/doctors', [AdminController::class, 'doctors'])->middleware('auth:sanctum', 'admin');
 
 
-
+Route::post('/doctor/login', [DoctorController::class, 'login']);
+Route::post('/doctor/logout', [DoctorController::class, 'logout'])->middleware('auth:sanctum', 'is.doctor');
