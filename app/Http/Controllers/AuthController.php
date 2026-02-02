@@ -86,7 +86,7 @@ class AuthController extends Controller
     }
 
 
-    public function editProfile(Request $request)
+    public function edit_profile(Request $request)
     {
         $user = auth()->user();
 
@@ -101,7 +101,6 @@ class AuthController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'status' => false,
                 'errors' => $validator->errors()
             ], 422);
         }

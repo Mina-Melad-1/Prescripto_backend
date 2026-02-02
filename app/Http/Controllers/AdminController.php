@@ -7,6 +7,8 @@ use App\Models\Doctor;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
 
 class AdminController extends Controller
 {
@@ -79,6 +81,62 @@ class AdminController extends Controller
             'doctor' => $doctor,
         ], 201);
     }
+
+
+
+    public function edit_doctor(Request $request, $doctorId)
+    {
+        $doctor = Doctor::findOrFail($doctorId);
+
+        $validator = Validator::make($request->all(), [
+            'name'          => 'required|string|max:255',
+            'speciality'    => 'nullable|string|max:255',
+            'degree'        => 'nullable|string|max:255',
+            'experience'    => 'nullable|string|max:255',
+            'address'       => 'nullable|string|max:255',
+            'fees'          => 'nullable|numeric',
+            'about'         => 'nullable|string',
+            'profile_image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        if ($request->hasFile('profile_image')) {
+
+            if ($doctor->profile_image && Storage::disk('public')->exists($doctor->profile_image)) {
+                Storage::disk('public')->delete($doctor->profile_image);
+            }
+
+            $imagePath = $request->file('profile_image')
+                ->store('doctors', 'public');
+
+            $doctor->profile_image = $imagePath;
+        }
+
+        $doctor->update([
+            'name'        => $request->name,
+            'speciality'  => $request->speciality,
+            'degree'      => $request->degree,
+            'experience'  => $request->experience,
+            'address'     => $request->address,
+            'fees'        => $request->fees,
+            'about'       => $request->about,
+        ]);
+
+        return response()->json([
+            'message' => 'Doctor updated successfully',
+            'doctor'  => $doctor->makeHidden([
+                'email_verified_at',
+                'created_at',
+                'updated_at',
+            ])
+        ]);
+    }
+
 
     public function doctors()
     {
