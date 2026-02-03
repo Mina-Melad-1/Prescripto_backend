@@ -8,7 +8,6 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Storage;
 
 class AdminController extends Controller
 {
@@ -37,7 +36,6 @@ class AdminController extends Controller
         ]);
     }
 
-
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
@@ -56,11 +54,19 @@ class AdminController extends Controller
 
     public function add_doctor(DoctorRequest $request)
     {
-
         $imagePath = null;
+
         if ($request->hasFile('profile_image')) {
-            $imagePath = $request->file('profile_image')
-                ->store('doctors', 'public');
+            $file = $request->file('profile_image');
+
+            $extension = $file->getClientOriginalExtension();
+            $filename  = time() . '_' . uniqid() . '.' . $extension;
+
+            $destination = 'images/doctors';
+            $file->move(public_path($destination), $filename);
+
+            // Store full public URL
+            $imagePath = asset($destination . '/' . $filename);
         }
 
         $doctor = Doctor::create([
@@ -82,8 +88,6 @@ class AdminController extends Controller
         ], 201);
     }
 
-
-
     public function edit_doctor(Request $request, $doctorId)
     {
         $doctor = Doctor::findOrFail($doctorId);
@@ -100,31 +104,38 @@ class AdminController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'errors' => $validator->errors()
-            ], 422);
+            return response()->json(['errors' => $validator->errors()], 422);
         }
 
         if ($request->hasFile('profile_image')) {
-
-            if ($doctor->profile_image && Storage::disk('public')->exists($doctor->profile_image)) {
-                Storage::disk('public')->delete($doctor->profile_image);
+            if ($doctor->profile_image) {
+                $oldPath = parse_url($doctor->profile_image, PHP_URL_PATH); // /images/doctors/xxx.jpg
+                $oldFullPath = public_path(ltrim($oldPath, '/'));
+                if (file_exists($oldFullPath)) {
+                    unlink($oldFullPath);
+                }
             }
 
-            $imagePath = $request->file('profile_image')
-                ->store('doctors', 'public');
+            // Upload new
+            $file = $request->file('profile_image');
+            $extension = $file->getClientOriginalExtension();
+            $filename  = time() . '_' . uniqid() . '.' . $extension;
 
-            $doctor->profile_image = $imagePath;
+            $destination = 'images/doctors';
+            $file->move(public_path($destination), $filename);
+
+            $doctor->profile_image = asset($destination . '/' . $filename);
         }
 
         $doctor->update([
-            'name'        => $request->name,
-            'speciality'  => $request->speciality,
-            'degree'      => $request->degree,
-            'experience'  => $request->experience,
-            'address'     => $request->address,
-            'fees'        => $request->fees,
-            'about'       => $request->about,
+            'name'          => $request->name,
+            'speciality'    => $request->speciality,
+            'degree'        => $request->degree,
+            'experience'    => $request->experience,
+            'address'       => $request->address,
+            'fees'          => $request->fees,
+            'about'         => $request->about,
+            'profile_image' => $doctor->profile_image,
         ]);
 
         return response()->json([
@@ -137,19 +148,9 @@ class AdminController extends Controller
         ]);
     }
 
-
     public function doctors()
     {
         $doctors = Doctor::latest()->get();
-
-        $doctors->transform(function ($doctor) {
-            $doctor->profile_image = $doctor->profile_image
-                ? asset('storage/' . $doctor->profile_image)
-                : null;
-
-            return $doctor;
-        });
-
         return response()->json([
             'data' => $doctors
         ], 200);

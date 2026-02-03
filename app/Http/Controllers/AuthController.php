@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\Hash;
 use App\Http\Requests\RegisterRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Storage;
 use App\Models\Doctor;
 
 class AuthController extends Controller
@@ -22,13 +21,14 @@ class AuthController extends Controller
             'email' => $val['email'],
             'password' => Hash::make($val['password']),
         ]);
+
         return response()->json([
             'message' => 'User registered successfully',
             'name' => $user->name,
             'email' => $user->email,
-            'password' => $user->password
         ], 201);
     }
+
     public function login(Request $request)
     {
         $request->validate([
@@ -41,6 +41,7 @@ class AuthController extends Controller
                 'message' => 'Invalid login details'
             ], 401);
         }
+
         $user = User::where('email', $request->email)->firstOrFail();
         $token = $user->createToken('auth_token')->plainTextToken;
 
@@ -60,11 +61,9 @@ class AuthController extends Controller
         ], 200);
     }
 
-
-
     public function profile(Request $request)
     {
-        $user = $request->user(); 
+        $user = $request->user();
 
         if (!$user) {
             return response()->json([
@@ -80,12 +79,9 @@ class AuthController extends Controller
             'gender' => $user->gender,
             'birthday' => $user->birthday,
             'role' => $user->role,
-            'profile_image' => $user->profile_image
-                ? url('storage/' . $user->profile_image)
-                : null,
+            'profile_image' => $user->profile_image,
         ]);
     }
-
 
     public function edit_profile(Request $request)
     {
@@ -101,36 +97,42 @@ class AuthController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'errors' => $validator->errors()
-            ], 422);
+            return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        // Handle Image Upload
-
         if ($request->hasFile('profile_image')) {
-
-            if ($user->profile_image && Storage::disk('public')->exists($user->profile_image)) {
-                Storage::disk('public')->delete($user->profile_image);
+            // Delete old image safely
+            if ($user->profile_image) {
+                $oldPath = parse_url($user->profile_image, PHP_URL_PATH); // /images/users/xxx.jpg
+                $oldFullPath = public_path(ltrim($oldPath, '/'));
+                if (file_exists($oldFullPath)) {
+                    unlink($oldFullPath);
+                }
             }
 
-            $imagePath = $request->file('profile_image')
-                ->store('users', 'public');
+            // Upload new
+            $file = $request->file('profile_image');
+            $extension = $file->getClientOriginalExtension();
+            $filename  = time() . '_' . uniqid() . '.' . $extension;
 
-            $user->profile_image = $imagePath;
+            $destination = 'images/users';
+            $file->move(public_path($destination), $filename);
+
+            $user->profile_image = asset($destination . '/' . $filename);
         }
 
         $user->update([
-            'name'     => $request->name,
-            'phone'    => $request->phone,
-            'address'  => $request->address,
-            'gender'   => $request->gender,
-            'birthday' => $request->birthday,
+            'name'          => $request->name,
+            'phone'         => $request->phone,
+            'address'       => $request->address,
+            'gender'        => $request->gender,
+            'birthday'      => $request->birthday,
+            'profile_image' => $user->profile_image,
         ]);
 
         return response()->json([
             'message' => 'Profile updated successfully',
-            'user' => $user->makeHidden([
+            'user'    => $user->makeHidden([
                 'role',
                 'email_verified_at',
                 'created_at',
@@ -142,15 +144,6 @@ class AuthController extends Controller
     public function doctors()
     {
         $doctors = Doctor::latest()->get();
-
-        $doctors->transform(function ($doctor) {
-            $doctor->profile_image = $doctor->profile_image
-                ? asset('storage/' . $doctor->profile_image)
-                : null;
-
-            return $doctor;
-        });
-
         return response()->json([
             'data' => $doctors
         ], 200);
