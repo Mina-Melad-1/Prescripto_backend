@@ -9,6 +9,7 @@ use App\Http\Requests\RegisterRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
+use App\Models\Doctor;
 
 class AuthController extends Controller
 {
@@ -136,5 +137,22 @@ class AuthController extends Controller
                 'updated_at',
             ])
         ]);
+    }
+
+    public function doctors()
+    {
+        $doctors = Doctor::latest()->get();
+
+        $doctors->transform(function ($doctor) {
+            $doctor->profile_image = $doctor->profile_image
+                ? asset('storage/' . $doctor->profile_image)
+                : null;
+
+            return $doctor;
+        });
+
+        return response()->json([
+            'data' => $doctors
+        ], 200);
     }
 }
