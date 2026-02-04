@@ -28,3 +28,4 @@ Route::get('/admin/doctors', [AdminController::class, 'doctors'])->middleware('a
 
 Route::post('/doctor/login', [DoctorController::class, 'login']);
 Route::post('/doctor/logout', [DoctorController::class, 'logout'])->middleware('auth:sanctum', 'is.doctor');
+Route::get('/doctor/profile', [DoctorController::class, 'profile'])->middleware('auth:sanctum', 'is.doctor');

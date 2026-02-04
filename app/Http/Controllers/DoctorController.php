@@ -46,4 +46,27 @@ class DoctorController extends Controller
             'message' => 'Doctor logged out successfully'
         ]);
     }
+
+    public function profile(Request $request)
+    {
+        // Get authenticated doctor (via sanctum)
+        $doctor = $request->user('doctor');
+
+        if (!$doctor) {
+            return response()->json([
+                'message' => 'Unauthorized'
+            ], 401);
+        }
+
+        return response()->json([
+            'profile_image' => $doctor->profile_image ?? "",
+            'name'          => $doctor->name,
+            'speciality'    => $doctor->speciality ?? "General Physician",
+            'degree'        => $doctor->degree ?? "",
+            'experience'    => $doctor->experience,
+            'address'       => $doctor->address ?? "",
+            'fees'          => $doctor->fees ?? "",
+            'about'         => $doctor->about ?? "",
+        ]);
+    }
 }
